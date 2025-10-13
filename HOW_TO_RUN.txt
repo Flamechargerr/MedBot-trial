@@ -1,0 +1,172 @@
+================================================================================
+                    HOW TO RUN MEDBOT - SIMPLE INSTRUCTIONS
+================================================================================
+
+PROBLEM: You keep typing "33" or "22" but the system expects single digits!
+
+SOLUTION: Type just ONE number (1, 2, 3, or 4) and press Enter
+
+================================================================================
+STEP-BY-STEP INSTRUCTIONS
+================================================================================
+
+1. Open Command Prompt or PowerShell
+
+2. Navigate to MedBot folder:
+   cd C:\Users\anama\OneDrive\Desktop\medbot\MedBot
+
+3. Run the system:
+   python MedBot_Complete.py
+
+4. When you see this menu:
+   
+   Select mode:
+     1. Train Baseline LSTM
+     2. Evaluate Models
+     3. Interactive Chatbot
+     4. Run All (Train -> Evaluate -> Chatbot)
+   
+   Enter choice (1-4):
+
+5. Type ONLY ONE NUMBER:
+   - Type: 3
+   - Press: Enter
+   
+   DO NOT TYPE: 33, 22, or any double digits!
+   JUST TYPE: 3
+
+6. The chatbot will start and you can ask medical questions!
+
+================================================================================
+COMMON MISTAKES
+================================================================================
+
+WRONG: Typing "33" or "22"
+RIGHT: Typing "3" or "2"
+
+WRONG: echo 3 | python MedBot_Complete.py
+RIGHT: python MedBot_Complete.py (then type 3 when prompted)
+
+================================================================================
+QUICK START OPTIONS
+================================================================================
+
+Option 1: Interactive Chatbot (Recommended)
+   python MedBot_Complete.py
+   Type: 3
+   Press: Enter
+
+Option 2: Direct Chatbot (No menu)
+   python chatbot.py
+
+Option 3: Run Everything
+   python MedBot_Complete.py
+   Type: 4
+   Press: Enter
+
+================================================================================
+WHAT EACH OPTION DOES
+================================================================================
+
+1 = Train Baseline LSTM
+    - Trains model on Harrison's textbook
+    - Takes 5-10 minutes
+    - Creates vocab.pkl and baseline_lstm_model.pth
+
+2 = Evaluate Models
+    - Tests all 3 models on FAQ questions
+    - Takes 2-3 minutes
+    - Shows accuracy metrics
+
+3 = Interactive Chatbot ⭐ BEST FOR DEMO
+    - Ask medical questions
+    - Get answers from all 3 models
+    - Instant responses
+
+4 = Run All
+    - Does 1, 2, and 3 in sequence
+    - Takes 10-15 minutes total
+
+================================================================================
+EXAMPLE SESSION
+================================================================================
+
+C:\Users\anama\OneDrive\Desktop\medbot\MedBot> python MedBot_Complete.py
+
+==============================================================================
+MedBot Phase 3 - Complete Medical AI System
+==============================================================================
+
+Select mode:
+  1. Train Baseline LSTM
+  2. Evaluate Models
+  3. Interactive Chatbot
+  4. Run All (Train -> Evaluate -> Chatbot)
+
+Enter choice (1-4): 3    <-- YOU TYPE THIS (just the number 3)
+
+==============================================================================
+INTERACTIVE MEDICAL CHATBOT
+==============================================================================
+
+Ask medical questions and get answers from all 3 models!
+Type 'quit' to exit
+
+Loading models...
+SUCCESS: Baseline LSTM loaded
+SUCCESS: RAG system ready
+
+==============================================================================
+Ready! Type your medical questions below:
+==============================================================================
+
+Your Question: What causes hypertension?    <-- YOU TYPE YOUR QUESTION
+
+ANSWERS FROM ALL 3 MODELS
+------------------------------------------------------------------------------
+
+[1] Baseline LSTM (Trained on Harrison's):
+    Essential hypertension results from a combination of genetic and 
+    environmental factors...
+
+[2] BioGPT (Medical Language Model):
+    Medical analysis: Essential hypertension involves multiple mechanisms...
+
+[3] Clinical-BERT (Clinical Reasoning):
+    Clinical assessment: Essential hypertension pathophysiology involves...
+
+------------------------------------------------------------------------------
+Retrieved from 3 medical knowledge sources
+
+Your Question: quit    <-- TYPE 'quit' TO EXIT
+
+Thank you for using MedBot! Goodbye!
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Problem: "Invalid choice. Exiting."
+Solution: You typed more than one digit. Type only 1, 2, 3, or 4
+
+Problem: "No interactive terminal detected"
+Solution: Don't use pipes (|). Run python MedBot_Complete.py directly
+
+Problem: Garbled text with weird symbols
+Solution: Fixed! Updated code removes emojis for Windows compatibility
+
+Problem: "vocab.pkl not found"
+Solution: Run option 1 first to train the model, OR just use option 3
+          (chatbot works without training, uses pre-trained models)
+
+================================================================================
+SUMMARY
+================================================================================
+
+✓ Type SINGLE digits only (1, 2, 3, or 4)
+✓ Don't type "33" or "22" - just "3" or "2"
+✓ Run directly in terminal (not with pipes)
+✓ For quick demo: Type 3 for Interactive Chatbot
+✓ All emojis removed for Windows compatibility
+
+================================================================================

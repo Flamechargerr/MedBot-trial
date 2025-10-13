@@ -385,14 +385,14 @@ def run_chatbot():
     """Run interactive medical chatbot with improved answer generation"""
     
     print("\n" + "="*90)
-    print("💬 INTERACTIVE MEDICAL CHATBOT")
+    print("INTERACTIVE MEDICAL CHATBOT")
     print("="*90)
-    print("\n🩺 Ask medical questions and get answers from all 3 models!")
-    print("   Type 'quit' to exit\n")
+    print("\nAsk medical questions and get answers from all 3 models!")
+    print("Type 'quit' to exit\n")
     print("-"*90)
     
     # Load models
-    print("\n🔄 Loading models...")
+    print("\nLoading models...")
     
     # Load vocabulary (optional - chatbot works without it)
     baseline_model = None
@@ -407,13 +407,13 @@ def run_chatbot():
             baseline_model = BaselineLSTM(vocab_size, EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM)
             baseline_model.load_state_dict(torch.load('baseline_lstm_model.pth', map_location='cpu'))
             baseline_model.eval()
-            print("✅ Baseline LSTM loaded")
+            print("SUCCESS: Baseline LSTM loaded")
         except Exception as e:
-            print(f"⚠️ Could not load Baseline LSTM: {e}")
+            print(f"WARNING: Could not load Baseline LSTM: {e}")
             baseline_model = None
     else:
-        print("⚠️ Baseline LSTM not trained yet (run option 1 first)")
-        print("   Chatbot will work with BioGPT and Clinical-BERT only")
+        print("WARNING: Baseline LSTM not trained yet (run option 1 first)")
+        print("         Chatbot will work with BioGPT and Clinical-BERT only")
         baseline_model = None
     
     # Setup RAG with comprehensive medical knowledge
@@ -456,7 +456,7 @@ def run_chatbot():
             ids=[f"med_{i}" for i in range(len(medical_knowledge))]
         )
     
-    print("✅ RAG system ready\n")
+    print("SUCCESS: RAG system ready\n")
     print("="*90)
     print("Ready! Type your medical questions below:")
     print("="*90)
@@ -472,13 +472,14 @@ def run_chatbot():
     while True:
         try:
             if not sys.stdin.isatty():
-                print("\n⚠️ No interactive terminal detected.")
+                print("\nWARNING: No interactive terminal detected.")
+                print("Run this script directly in your terminal (not piped)")
                 break
             
-            question = input("\n🩺 Your Question: ").strip()
+            question = input("\nYour Question: ").strip()
             
             if question.lower() in ['quit', 'exit', 'q']:
-                print("\n👋 Thank you for using MedBot! Goodbye!\n")
+                print("\nThank you for using MedBot! Goodbye!\n")
                 break
             
             if not question:
@@ -490,7 +491,7 @@ def run_chatbot():
             context = res['documents'][0]
             
             print("\n" + "-"*90)
-            print("📋 ANSWERS FROM ALL 3 MODELS")
+            print("ANSWERS FROM ALL 3 MODELS")
             print("-"*90)
             
             # Generate comprehensive answers from retrieved context
@@ -503,33 +504,33 @@ def run_chatbot():
             
             # Baseline LSTM
             if baseline_model:
-                print("\n1️⃣  Baseline LSTM (Trained on Harrison's):")
-                print(f"   {baseline_answer}")
+                print("\n[1] Baseline LSTM (Trained on Harrison's):")
+                print(f"    {baseline_answer}")
             
             # BioGPT
-            print("\n2️⃣  BioGPT (Medical Language Model):")
-            print(f"   {biogpt_answer}")
+            print("\n[2] BioGPT (Medical Language Model):")
+            print(f"    {biogpt_answer}")
             
             # Clinical-BERT
-            print("\n3️⃣  Clinical-BERT (Clinical Reasoning):")
-            print(f"   {clinbert_answer}")
+            print("\n[3] Clinical-BERT (Clinical Reasoning):")
+            print(f"    {clinbert_answer}")
             
             print("\n" + "-"*90)
-            print(f"📚 Retrieved from {len(context)} medical knowledge sources")
+            print(f"Retrieved from {len(context)} medical knowledge sources")
             
             # Show expected answer if available
             if question.lower() in faq_dict:
-                print(f"\n✅ Expected Answer (for reference):")
-                print(f"   {faq_dict[question.lower()][:300]}...")
+                print(f"\nExpected Answer (for reference):")
+                print(f"    {faq_dict[question.lower()][:300]}...")
             
         except EOFError:
-            print("\n\n👋 Input stream closed. Exiting chatbot.\n")
+            print("\n\nInput stream closed. Exiting chatbot.\n")
             break
         except KeyboardInterrupt:
-            print("\n\n👋 Chatbot interrupted. Goodbye!\n")
+            print("\n\nChatbot interrupted. Goodbye!\n")
             break
         except Exception as e:
-            print(f"\n⚠️ Error: {e}")
+            print(f"\nError: {e}")
             continue
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -539,11 +540,6 @@ def run_chatbot():
 def main():
     """Main function - run complete MedBot system"""
     
-    import sys
-    import io
-    if sys.platform == 'win32':
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    
     print("\n" + "="*90)
     print("MedBot Phase 3 - Complete Medical AI System")
     print("="*90)
@@ -551,7 +547,7 @@ def main():
     print("  1. Train Baseline LSTM")
     print("  2. Evaluate Models")
     print("  3. Interactive Chatbot")
-    print("  4. Run All (Train → Evaluate → Chatbot)")
+    print("  4. Run All (Train -> Evaluate -> Chatbot)")
     print()
     
     try:
@@ -564,17 +560,22 @@ def main():
         elif choice == '3':
             run_chatbot()
         elif choice == '4':
-            print("\n🚀 Running complete pipeline...\n")
+            print("\nRunning complete pipeline...\n")
             train_baseline_model()
             evaluate_models()
             run_chatbot()
         else:
-            print("Invalid choice. Exiting.")
+            print("\nInvalid choice! Please enter 1, 2, 3, or 4")
+            print("You entered:", repr(choice))
+            print("\nTry again:")
+            print("  Type: 3")
+            print("  Then press: Enter")
+            print("\nExiting...")
     
     except KeyboardInterrupt:
-        print("\n\n👋 Interrupted. Goodbye!\n")
+        print("\n\nInterrupted. Goodbye!\n")
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
+        print(f"\nError: {e}\n")
 
 if __name__ == "__main__":
     main()
