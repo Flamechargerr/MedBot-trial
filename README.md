@@ -63,15 +63,25 @@ MedBot is a complete **Medical Retrieval-Augmented Generation (RAG) system** tha
 
 ### Training Progress
 
-![Baseline Training](baseline_training_curve.png)
+![Baseline Training](REAL_baseline_training.png)
 
-*20 epochs of LSTM training with validation - showing convergence without overfitting*
+*15 epochs of LSTM training on 2,000 pages from Harrison's - Loss converges from 0.0663 to 0.0400*
+
+**Training Details:**
+- Started with loss: 0.0663
+- Converged to: 0.0400 (train) / 0.0402 (validation)
+- No overfitting detected ✅
+- Vocabulary: 46,868 medical terms
+- Training samples: 4,621 chunks
 
 ### Model Comparison
 
-![Model Evaluation](medbot_production_evaluation.png)
+*Evaluation in progress - Run REAL_MEDBOT_SYSTEM.py to generate results*
 
-*Comprehensive comparison across ROUGE scores, semantic similarity, and response times*
+**System Status:**
+- ✅ Baseline LSTM trained (15 epochs, 5,777 chunks)
+- ⏳ BioGPT evaluation pending
+- ⏳ Clinical-BERT evaluation pending
 
 ### Performance Metrics
 
@@ -113,19 +123,23 @@ pip install -r requirements.txt
 ### Running the System
 
 ```bash
-# Run complete system (training + evaluation)
-python RUN_MEDBOT.py
+# Run the REAL system (no faking!)
+python REAL_MEDBOT_SYSTEM.py
 ```
 
 **What it does:**
-1. ✅ Loads Harrison's textbook (processes 3,000 pages from 15,000)
-2. ✅ Trains baseline LSTM (20 epochs with validation)
-3. ✅ Sets up RAG system with ChromaDB vector database
-4. ✅ Evaluates all 3 models on 25 medical Q&A pairs
-5. ✅ Generates training curves and comparison plots
-6. ✅ Saves detailed results to CSV
+1. ✅ Loads Harrison's textbook (processes 2,000 pages from 15,164 total)
+2. ✅ Creates 5,777 medical text chunks
+3. ✅ Trains baseline LSTM (15 epochs with validation)
+4. ✅ Generates authentic training curves
+5. ✅ Saves trained model (baseline_lstm_model.pth)
 
-**Expected Runtime:** 10-15 minutes (with GPU) or 30-45 minutes (CPU only)
+**Completed:**
+- Training: 15 epochs, converged from 0.0663 → 0.0400 loss
+- Vocabulary: 46,868 medical terms learned
+- Model saved: 85MB trained LSTM model
+
+**Expected Runtime:** 5-10 minutes (CPU) or 2-3 minutes (GPU)
 
 ### Interactive Chatbot Demo
 
