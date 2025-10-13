@@ -571,26 +571,32 @@ def main():
     print()
     
     try:
-        choice = input("Enter choice (1-4): ").strip()
-        
-        if choice == '1':
-            train_baseline_model()
-        elif choice == '2':
-            evaluate_models()
-        elif choice == '3':
-            run_chatbot()
-        elif choice == '4':
-            print("\nRunning complete pipeline...\n")
-            train_baseline_model()
-            evaluate_models()
-            run_chatbot()
-        else:
-            print("\nInvalid choice! Please enter 1, 2, 3, or 4")
-            print("You entered:", repr(choice))
-            print("\nTry again:")
-            print("  Type: 3")
-            print("  Then press: Enter")
-            print("\nExiting...")
+        while True:
+            choice = input("Enter choice (1-4): ").strip()
+            
+            if choice == '':
+                print("Please enter a number (1, 2, 3, or 4)")
+                continue
+            
+            if choice == '1':
+                train_baseline_model()
+                break
+            elif choice == '2':
+                evaluate_models()
+                break
+            elif choice == '3':
+                run_chatbot()
+                break
+            elif choice == '4':
+                print("\nRunning complete pipeline...\n")
+                train_baseline_model()
+                evaluate_models()
+                run_chatbot()
+                break
+            else:
+                print(f"\nInvalid choice: '{choice}'")
+                print("Please enter only: 1, 2, 3, or 4")
+                print("(Don't type '33' or '22', just '3' or '2')\n")
     
     except KeyboardInterrupt:
         print("\n\nInterrupted. Goodbye!\n")
