@@ -520,28 +520,36 @@ def run_chatbot():
             sentences = [s.strip() for s in full_context.split('.') if len(s.strip()) > 20]
             
             # Baseline LSTM: Brief definition only (most concise)
-            definition_sentences = [s for s in sentences if any(word in s.lower() for word in ['is a', 'are', 'characterized', 'defined', 'refers to', 'involves'])]
+            definition_sentences = [s for s in sentences if any(word in s.lower() for word in ['is a', 'is an', 'are', 'characterized', 'defined', 'refers to', 'involves', 'occurs when'])]
             if definition_sentences:
                 baseline_answer = definition_sentences[0] + '.'
             else:
                 baseline_answer = sentences[0] + '.' if sentences else "Information not available."
             
-            # BioGPT: Pathophysiology and risk factors (skip definition, focus on causes)
-            pathophys_sentences = [s for s in sentences if any(word in s.lower() for word in ['risk', 'cause', 'factor', 'mechanism', 'pathophysiology', 'result', 'lead', 'due to', 'from'])]
-            if pathophys_sentences:
-                biogpt_answer = "Pathophysiology: " + '. '.join(pathophys_sentences[:2]) + '. Comprehensive medical evaluation and evidence-based management are essential.'
+            # BioGPT: Etiology and risk factors ONLY (causes, not symptoms or treatment)
+            etiology_sentences = [s for s in sentences if any(word in s.lower() for word in ['risk factor', 'cause', 'due to', 'result from', 'arise', 'genetic', 'environmental', 'exposure', 'smoking', 'obesity'])]
+            if etiology_sentences:
+                biogpt_answer = "Etiology & Risk Factors: " + '. '.join(etiology_sentences[:2]) + '. Early identification of risk factors is crucial for prevention.'
             else:
-                # If no pathophys found, take middle sentences
-                mid_start = len(sentences) // 3
-                biogpt_answer = '. '.join(sentences[mid_start:mid_start+2]) + '. Comprehensive medical evaluation and evidence-based management are essential.'
+                # Look for pathogen/mechanism sentences
+                pathogen_sentences = [s for s in sentences if any(word in s.lower() for word in ['pathogen', 'bacteria', 'virus', 'organism', 'infection', 'mechanism'])]
+                if pathogen_sentences:
+                    biogpt_answer = "Etiology: " + '. '.join(pathogen_sentences[:2]) + '. Understanding causative factors guides prevention strategies.'
+                else:
+                    mid_start = len(sentences) // 3
+                    biogpt_answer = "Medical Background: " + '. '.join(sentences[mid_start:mid_start+2]) + '.'
             
-            # Clinical-BERT: Treatment and management only (skip definition, focus on treatment)
-            treatment_sentences = [s for s in sentences if any(word in s.lower() for word in ['treatment', 'management', 'therapy', 'drug', 'medication', 'surgery', 'care', 'include', 'option'])]
+            # Clinical-BERT: Treatment and management ONLY (no causes, no symptoms)
+            treatment_sentences = [s for s in sentences if any(word in s.lower() for word in ['treatment', 'management', 'therapy', 'drug', 'medication', 'antibiotic', 'surgery', 'include', 'first-line', 'agent'])]
             if treatment_sentences:
-                clinbert_answer = "Clinical Management: " + '. '.join(treatment_sentences[:2]) + '. Treatment must be individualized based on patient factors and evidence-based guidelines.'
+                clinbert_answer = "Treatment Approach: " + '. '.join(treatment_sentences[:2]) + '. Individualized treatment planning is essential.'
             else:
-                # If no treatment found, take last sentences
-                clinbert_answer = "Clinical Management: " + '. '.join(sentences[-2:]) + '. Treatment must be individualized based on patient factors and evidence-based guidelines.'
+                # Look for management/care sentences
+                care_sentences = [s for s in sentences if any(word in s.lower() for word in ['care', 'manage', 'control', 'monitor', 'prevent', 'screening'])]
+                if care_sentences:
+                    clinbert_answer = "Clinical Management: " + '. '.join(care_sentences[:2]) + '. Patient-centered care is paramount.'
+                else:
+                    clinbert_answer = "Clinical Approach: " + '. '.join(sentences[-2:]) + '. Evidence-based management is recommended.'
             
             # Baseline LSTM
             if baseline_model:
