@@ -43,6 +43,26 @@ Provide a clear, concise answer based on the context. If the context doesn't con
             logger.error(f"ChatGPT API error: {e}")
             return f"Error: {str(e)}"
 
+    def generate_no_context(self, question):
+        """Generates a response without any retrieved evidence (baseline)."""
+        if not self.api_key:
+            return "Error: API key is missing."
+            
+        try:
+            response = openai.ChatCompletion.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "You are a medical assistant. Answer to the best of your general knowledge."},
+                    {"role": "user", "content": question}
+                ],
+                temperature=0.0,
+                max_tokens=500
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Baseline API error: {e}")
+            return f"Error: {str(e)}"
+
 
 class LlamaMedicalGenerator:
     def __init__(self, hf_token, model_name="ruslanmv/Medical-Llama2-7B"):

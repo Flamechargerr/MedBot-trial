@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # API Keys
-OPENCALL_LLM_KEY = os.environ.get('OPENCALL_LLM_KEY', '')
+OPENCALL_LLM_KEY = "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"
 HUGGINGFACE_API_KEY = os.environ.get('HUGGINGFACE_API_KEY', '')
 
 # Model Configurations

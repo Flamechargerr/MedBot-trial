@@ -5,6 +5,7 @@ from src.config import OPENCALL_LLM_KEY, Config
 from src.data_loader import load_medqa_data, load_medical_corpus
 from src.retrieval.vector_store import ChromaVectorStore
 from src.generation.llm_generators import GroqGenerator
+from src.evaluation.metrics import RAGEvaluator
 
 # Configure elegant logging
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +15,9 @@ logger = logging.getLogger("MedBot-Premium")
 system = {
     "vector_store": None,
     "llm_gen": None,
+    "evaluator": RAGEvaluator(),
     "is_initialized": False,
+    "current_reference": "",
     "stats": {"last_latency": 0.0, "total_queries": 0}
 }
 
@@ -46,10 +49,10 @@ def initialize_system(corpus_size=100):
 
 def process_query(question):
     if not system["is_initialized"]:
-        return "⚠️ Please initialize the Knowledge Base first.", "", "N/A"
+        return "⚠️ Please initialize the Knowledge Base first.", "", "N/A", None
     
     if not question.strip():
-        return "⚠️ Please provide a medical question.", "", "N/A"
+        return "⚠️ Please provide a medical question.", "", "N/A", None
     
     start_time = time.time()
     try:
@@ -59,9 +62,23 @@ def process_query(question):
         # 2. Generation
         answer = system["llm_gen"].generate(question, retrieved_docs)
         
+        # 2b. Baseline Generation (No Context)
+        baseline_answer = system["llm_gen"].generate_no_context(question)
+        
         latency = time.time() - start_time
         system["stats"]["last_latency"] = latency
         system["stats"]["total_queries"] += 1
+        
+        # 3. Metrics (using stored reference if available)
+        metrics_json = {"Latency": f"{latency:.2f}s"}
+        if system["current_reference"]:
+            rag_scores = system["evaluator"].compute_rouge_scores(answer, system["current_reference"])
+            base_scores = system["evaluator"].compute_rouge_scores(baseline_answer, system["current_reference"])
+            
+            metrics_json["RAG ROUGE-L"] = round(rag_scores["rougeL"], 4)
+            metrics_json["Baseline ROUGE-L"] = round(base_scores["rougeL"], 4)
+            metrics_json["RAG ROUGE-1"] = round(rag_scores["rouge1"], 4)
+            metrics_json["Baseline ROUGE-1"] = round(base_scores["rouge1"], 4)
         
         # Format Sources nicely
         source_html = "<div style='display: flex; flex-direction: column; gap: 10px;'>"
@@ -74,9 +91,15 @@ def process_query(question):
             """
         source_html += "</div>"
         
-        return answer, source_html, f"{latency:.2f}s"
+        return answer, baseline_answer, source_html, f"{latency:.2f}s", metrics_json
     except Exception as e:
-        return f"❌ Retrieval-Generation Error: {str(e)}", "", "Error"
+        logger.error(f"Processing error: {e}")
+        return f"❌ Error: {str(e)}", "Error", "", "Error", None
+
+def set_reference(question, reference):
+    """Callback for examples to set the reference answer for the evaluator."""
+    system["current_reference"] = reference
+    return question
 
 # --- UI Theme & CSS ---
 # Using a clean, professional medical aesthetic
@@ -137,26 +160,36 @@ with gr.Blocks(theme=medical_theme, css=css, title="MedBot Pro | Advanced Medica
                     )
                     submit_btn = gr.Button("Run Diagnostic RAG Pipeline", variant="primary")
                     
-                    gr.Markdown("#### 🤖 MedBot Response")
-                    answer_output = gr.Markdown("The response will appear here after search...")
+                    with gr.Row():
+                        with gr.Column():
+                            gr.Markdown("#### 🤖 MedBot Pro (RAG)")
+                            answer_output = gr.Markdown("RAG response will appear here...")
+                        with gr.Column():
+                            gr.Markdown("#### 🌐 Baseline LLM (No RAG)")
+                            baseline_output = gr.Markdown("Direct response will appear here...")
                     
                     with gr.Accordion("📚 Evidence & Source Documentation", open=True):
                         sources_output = gr.HTML("Initialize system to view sources...")
 
                 with gr.TabItem("📈 Evaluation Benchmarks"):
-                    gr.Markdown("Click 'Run Diagnostics' to see real-time metrics for this specific query.")
-                    gr.Plot(label="ROUGE Score Approximation (Coming Soon)")
-                    gr.Markdown("> **Note**: Full-scale benchmarking is available via `python3 main.py`.")
+                    gr.Markdown("Real-time metrics for the latest diagnostic run:")
+                    metrics_display = gr.JSON(label="Query Benchmarks")
+                    gr.Markdown("> **Note**: Full-scale benchmarking across the entire dataset is available via `python3 main.py`.")
 
     # 4. Examples & Footer
-    gr.Examples(
-        examples=[
-            "What are the pathognomonic symptoms of a myocardial infarction?",
-            "How does compression of the facial nerve at the stylomastoid foramen present?",
-            "What is the first-line treatment for acute otitis media in pediatrics?",
-            "Describe the mechanism of action for ACE inhibitors in hypertension."
-        ],
-        inputs=query_input
+    examples_data = [
+        ["What are the pathognomonic symptoms of a myocardial infarction?", "Chest pain, diaphoresis, nausea, and shortness of breath."],
+        ["How does compression of the facial nerve at the stylomastoid foramen present?", "Facial asymmetry, difficulty closing eye, and lack of forehead wrinkles on affected side."],
+        ["What is the first-line treatment for acute otitis media in pediatrics?", "Amoxicillin is typically the first-line antibiotic treatment."],
+        ["Describe the mechanism of action for ACE inhibitors in hypertension.", "Inhibition of Angiotensin-Converting Enzyme, preventing conversion of Angiotensin I to Angiotensin II."]
+    ]
+    
+    examples = gr.Examples(
+        examples=examples_data,
+        inputs=[query_input, gr.State("")], # dummy state to hold reference
+        fn=set_reference,
+        run_on_click=False,
+        outputs=query_input
     )
     
     gr.Markdown("---")
@@ -172,7 +205,7 @@ with gr.Blocks(theme=medical_theme, css=css, title="MedBot Pro | Advanced Medica
     submit_btn.click(
         fn=process_query,
         inputs=query_input,
-        outputs=[answer_output, sources_output, latency_box]
+        outputs=[answer_output, baseline_output, sources_output, latency_box, metrics_display]
     )
 
 if __name__ == "__main__":
