@@ -133,6 +133,13 @@ css = """
 # --- Build App ---
 with gr.Blocks(theme=medical_theme, css=css, title="MedBot Pro | Advanced Medical RAG") as demo:
     
+    examples_data = [
+        ["What are the pathognomonic symptoms of a myocardial infarction?", "Chest pain, diaphoresis, nausea, and shortness of breath."],
+        ["How does compression of the facial nerve at the stylomastoid foramen present?", "Facial asymmetry, difficulty closing eye, and lack of forehead wrinkles on affected side."],
+        ["What is the first-line treatment for acute otitis media in pediatrics?", "Amoxicillin is typically the first-line antibiotic treatment."],
+        ["Describe the mechanism of action for ACE inhibitors in hypertension.", "Inhibition of Angiotensin-Converting Enzyme, preventing conversion of Angiotensin I to Angiotensin II."]
+    ]
+    
     # 1. Header
     with gr.Row(elem_classes="medical-header"):
         with gr.Column():
@@ -171,6 +178,18 @@ with gr.Blocks(theme=medical_theme, css=css, title="MedBot Pro | Advanced Medica
                     )
                     submit_btn = gr.Button("Run Diagnostic RAG Pipeline", variant="primary")
                     
+                    # Store current reference answer in a hidden field for the evaluator
+                    reference_input = gr.Textbox(visible=False)
+                    
+                    gr.Examples(
+                        examples=examples_data,
+                        inputs=[query_input, reference_input],
+                        fn=set_reference,
+                        outputs=query_input,
+                        run_on_click=False,
+                        label="Try these clinical cases (Click to load):"
+                    )
+                    
                     with gr.Row():
                         with gr.Column():
                             gr.Markdown("#### 🤖 MedBot Pro (RAG)")
@@ -187,22 +206,6 @@ with gr.Blocks(theme=medical_theme, css=css, title="MedBot Pro | Advanced Medica
                     metrics_display = gr.JSON(label="Query Benchmarks")
                     gr.Markdown("> **Note**: Full-scale benchmarking across the entire dataset is available via `python3 main.py`.")
 
-    # 4. Examples & Footer
-    examples_data = [
-        ["What are the pathognomonic symptoms of a myocardial infarction?", "Chest pain, diaphoresis, nausea, and shortness of breath."],
-        ["How does compression of the facial nerve at the stylomastoid foramen present?", "Facial asymmetry, difficulty closing eye, and lack of forehead wrinkles on affected side."],
-        ["What is the first-line treatment for acute otitis media in pediatrics?", "Amoxicillin is typically the first-line antibiotic treatment."],
-        ["Describe the mechanism of action for ACE inhibitors in hypertension.", "Inhibition of Angiotensin-Converting Enzyme, preventing conversion of Angiotensin I to Angiotensin II."]
-    ]
-    
-    examples = gr.Examples(
-        examples=examples_data,
-        inputs=[query_input, gr.State("")], # dummy state to hold reference
-        fn=set_reference,
-        run_on_click=False,
-        outputs=query_input
-    )
-    
     gr.Markdown("---")
     gr.Markdown("<div class='footer'>Developed for Production-Ready CV | Powered by ChromaDB, Groq & PyTorch</div>")
 
