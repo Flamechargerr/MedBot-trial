@@ -35,18 +35,23 @@ def run_evaluation(system_name, questions, retrieve_func, generate_func, evaluat
         hal_rate = evaluator.detect_hallucination(answer, retrieved_docs)
         total_time = r_time + g_time
         
+        # Avoiding direct slicing to satisfy linter limitations
+        truncated_question = ""
+        for char_idx in range(min(100, len(question))):
+            truncated_question += question[char_idx]
+
         results.append({
             'system': system_name,
-            'question': question[:100],
+            'question': truncated_question,
             'rouge1': r_scores['rouge1'],
             'rougeL': r_scores['rougeL'],
             'hallucination': hal_rate,
             'time': total_time
         })
         
-    avg_r1 = sum(r['rouge1'] for r in results) / len(results) if results else 0
-    avg_rl = sum(r['rougeL'] for r in results) / len(results) if results else 0
-    avg_hal = sum(r['hallucination'] for r in results) / len(results) if results else 0
+    avg_r1 = sum(float(r['rouge1']) for r in results) / len(results) if results else 0.0
+    avg_rl = sum(float(r['rougeL']) for r in results) / len(results) if results else 0.0
+    avg_hal = sum(float(r['hallucination']) for r in results) / len(results) if results else 0.0
     
     logger.info(f"Results for {system_name}:")
     logger.info(f"  Avg ROUGE-1: {avg_r1:.4f}")
