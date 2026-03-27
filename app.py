@@ -75,9 +75,15 @@ def chat():
         latency = time.time() - start_time
         
         metrics = {"Latency": f"{latency:.2f}s"}
-        if system.current_reference:
-            rag_scores = system.evaluator.compute_rouge_scores(answer, system.current_reference)
-            base_scores = system.evaluator.compute_rouge_scores(baseline_answer, system.current_reference)
+        
+        # Determine an evaluation reference if one wasn't directly provided
+        eval_reference = system.current_reference
+        if not eval_reference and retrieved_docs:
+            eval_reference = retrieved_docs[0]['text'][:1000] # Proxy ground truth based on top evidence
+            
+        if eval_reference:
+            rag_scores = system.evaluator.compute_rouge_scores(answer, eval_reference)
+            base_scores = system.evaluator.compute_rouge_scores(baseline_answer, eval_reference)
             metrics["RAG_ROUGE_L"] = round(rag_scores["rougeL"], 4)
             metrics["Baseline_ROUGE_L"] = round(base_scores["rougeL"], 4)
             val_diff = (rag_scores['rougeL'] - base_scores['rougeL'])

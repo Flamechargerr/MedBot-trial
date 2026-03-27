@@ -93,10 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Set metrics
                 if(data.metrics) {
-                    latVal.textContent = data.metrics.Latency || '0.00s';
-                    accVal.textContent = data.metrics.Accuracy_Improvement || 'N/A';
-                    ragVal.textContent = data.metrics.RAG_ROUGE_L || 'N/A';
-                    baseVal.textContent = data.metrics.Baseline_ROUGE_L || 'N/A';
+                    latVal.textContent = data.metrics.Latency !== undefined ? data.metrics.Latency : '0.00s';
+                    accVal.textContent = data.metrics.Accuracy_Improvement !== undefined ? data.metrics.Accuracy_Improvement : 'N/A';
+                    ragVal.textContent = data.metrics.RAG_ROUGE_L !== undefined ? data.metrics.RAG_ROUGE_L : 'N/A';
+                    baseVal.textContent = data.metrics.Baseline_ROUGE_L !== undefined ? data.metrics.Baseline_ROUGE_L : 'N/A';
                 }
                 
                 // Set sources
