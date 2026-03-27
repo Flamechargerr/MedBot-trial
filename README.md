@@ -1,6 +1,7 @@
 # 🏥 MedBot Pro: Advanced RAG Diagnostic Interface
 
 ![MedBot Pro Dashboard](figs/medbot_dashboard.png)
+![MedBot UI Demo](figs/medbot_demo.webp)
 
 MedBot Pro is an enterprise-grade Retrieval-Augmented Generation (RAG) platform designed for highly factual medical knowledge synthesis. It leverages state-of-the-art vector similarity search and large language model inference to retrieve relevant biomedical literature and generate grounded, hallucination-free clinical answers.
 
