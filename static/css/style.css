@@ -55,6 +55,17 @@ body {
 /* Typography */
 h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; }
 
+
+.safety-notice {
+    padding: 10px 12px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: #fecaca;
+}
+
 /* Control Panel */
 .control-panel .range-wrapper { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; margin-top: 8px;}
 input[type=range] { flex: 1; accent-color: var(--primary); }

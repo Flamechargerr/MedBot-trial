@@ -10,12 +10,15 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="brand">
                 <div class="logo"></div>
                 <h2>MedBot Pro</h2>
                 <span class="badge">Enterprise RAG</span>
+            </div>
+
+            <div class="safety-notice">
+                <strong>Safety Notice:</strong> This system is for decision-support and education only, not clinical diagnosis.
             </div>
 
             <div class="control-panel">
@@ -48,7 +51,7 @@
                     <span class="metric-value" id="base-val">N/A</span>
                 </div>
             </div>
-            
+
             <div class="examples-panel">
                 <h3>Quick Scenarios</h3>
                 <ul id="examples-list">
@@ -60,7 +63,6 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
             <header class="top-nav">
                 <h1>Diagnostic Interface</h1>
@@ -76,7 +78,6 @@
             </section>
 
             <section class="results-grid">
-                <!-- RAG Response -->
                 <div class="response-card rag-card">
                     <div class="card-header">
                         <div class="glow-indicator"></div>
@@ -87,7 +88,6 @@
                     </div>
                 </div>
 
-                <!-- Baseline Response -->
                 <div class="response-card base-card">
                     <div class="card-header">
                         <div class="indicator"></div>

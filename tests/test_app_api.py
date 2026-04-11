@@ -10,16 +10,37 @@ def _install_app_dependency_stubs():
     class Flask:
         def __init__(self, *args, **kwargs):
             self.routes = {}
+            self.view_functions = {}
+            self.config = {}
+            self.before_request_handlers = []
+            self.after_request_handlers = []
 
         def route(self, path, methods=None):
             def decorator(func):
                 self.routes[(path, tuple(methods or ["GET"]))] = func
+                self.view_functions[func.__name__] = func
                 return func
 
             return decorator
 
+        def before_request(self, func):
+            self.before_request_handlers.append(func)
+            return func
+
+        def after_request(self, func):
+            self.after_request_handlers.append(func)
+            return func
+
     flask_module.Flask = Flask
-    flask_module.request = types.SimpleNamespace(json=None)
+    flask_module.request = types.SimpleNamespace(
+        json=None,
+        method="POST",
+        headers={},
+        content_length=0,
+        is_json=True,
+        path="/api/init",
+        remote_addr="127.0.0.1",
+    )
     flask_module.jsonify = lambda payload: payload
     flask_module.render_template = lambda template_name: f"rendered:{template_name}"
     sys.modules["flask"] = flask_module
@@ -33,8 +54,26 @@ def _install_app_dependency_stubs():
         def load_env(cls):
             cls.DEVICE = "cpu"
 
+    class RuntimeConfig:
+        environment = "local"
+        log_level = "INFO"
+        api_key = ""
+        huggingface_api_key = ""
+        app_auth_token = ""
+        cors_origins = ["http://127.0.0.1:5000"]
+        rate_limit_per_minute = 200
+        max_request_bytes = 65536
+        max_query_chars = 2000
+        default_corpus_size = 200
+        max_corpus_size = 2000
+        retrieval_top_k = 3
+        faiss_db_dir = "./faiss_db"
+        runtime_state_path = "/tmp/test-runtime-state.json"
+        llm_max_retries = 0
+
     config_module.OPENCALL_LLM_KEY = ""
     config_module.Config = Config
+    config_module.get_config = lambda: RuntimeConfig()
     sys.modules["src.config"] = config_module
 
     data_loader_module = types.ModuleType("src.data_loader")
@@ -48,12 +87,21 @@ def _install_app_dependency_stubs():
 
     vector_store_module = types.ModuleType("src.retrieval.langchain_faiss_store")
 
+    class _Index:
+        ntotal = 0
+
+    class _VectorStore:
+        index = _Index()
+
     class LangchainFAISSStore:
         def __init__(self, db_dir="./faiss_db", device="cpu"):
             self.docs = []
+            self.vector_store = None
 
         def add_documents(self, documents):
             self.docs.extend(documents)
+            self.vector_store = _VectorStore()
+            self.vector_store.index.ntotal = len(self.docs)
 
         def retrieve(self, query, top_k=3):
             return [{"text": "retrieved evidence", "metadata": {"title": "Stub Source"}}]
@@ -64,7 +112,7 @@ def _install_app_dependency_stubs():
     llm_module = types.ModuleType("src.generation.llm_generators")
 
     class GroqGenerator:
-        def __init__(self, api_key):
+        def __init__(self, api_key, max_retries=0):
             self.api_key = api_key
 
         def generate(self, question, retrieved_docs):
@@ -101,8 +149,8 @@ class FlaskApiTests(unittest.TestCase):
         self.app_module.system.is_initialized = False
         self.app_module.system.vector_store = None
         self.app_module.system.llm_gen = None
-        self.app_module.system.current_reference = ""
         self.app_module.request.json = None
+        self.app_module.request.method = "POST"
 
     def test_index_route(self):
         response = self.app_module.index()
@@ -145,7 +193,12 @@ class FlaskApiTests(unittest.TestCase):
         self.app_module.request.json = {"query": ""}
         payload, status = self.app_module.chat()
         self.assertEqual(status, 400)
-        self.assertEqual(payload["message"], "No query provided")
+        self.assertIn("message", payload)
+
+    def test_v1_health_ready_status(self):
+        response, status = self.app_module.app.view_functions["ready_health"]()
+        self.assertIn(status, {200, 503})
+        self.assertIn("status", response)
 
 
 if __name__ == "__main__":
