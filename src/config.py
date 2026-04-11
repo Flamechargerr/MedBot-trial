@@ -41,5 +41,7 @@ class Config:
                 else 'cpu'
             )
         except Exception as e:
-            logging.getLogger(__name__).warning(f"Falling back to CPU device: {e}")
+            logging.getLogger(__name__).warning(
+                f"Failed to initialize PyTorch device, falling back to CPU: {e}"
+            )
             cls.DEVICE = 'cpu'
