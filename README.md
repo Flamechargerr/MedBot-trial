@@ -1,114 +1,117 @@
-# MedRAG – Production-Style Health AI RAG System
+# MedRAG – Production-Oriented Fullstack Medical RAG System
 
-MedRAG is a retrieval-augmented generation (RAG) system for medical Q&A demonstration use-cases.  
-It combines:
-- **FAISS semantic retrieval** over a curated medical corpus
-- **LLM generation** (Groq/Llama via API)
-- **Evidence display + baseline comparison** for explainability
-- **Lightweight Flask web app** for interactive demoing
+MedRAG is a fullstack retrieval-augmented generation (RAG) system for medical Q&A with a Flask backend, FAISS retrieval, LLM generation, and a browser UI.
 
-> ⚠️ **Safety notice:** This project is for AI engineering demonstration and education. It is **not** a medical device and must not be used as clinical advice.
+> ⚠️ **Safety notice:** MedRAG is for engineering demonstration and decision-support workflows only. It is not a medical device and must not be used as clinical advice.
 
 ---
 
-## Demo Screenshots
+## What's production-ready in this version
 
-![MedRAG Architecture](figs/MedRAG.png)
-![MedRAG Dashboard](figs/medbot_dashboard.png)
-![MedRAG Demo](figs/medbot_demo.webp)
-
----
-
-## Why this project matters
-
-This repository demonstrates how to take an LLM proof-of-concept and shape it into a production-style system with:
-- modular code (`src/`)
-- explicit retrieval and grounding flow
-- measurable quality metrics
-- responsible-AI framing (factual grounding + explainability)
+- Versioned API (`/api/v1/*`) with backward-compatible legacy routes
+- Layered backend architecture (`app.py` + service layer + security layer)
+- Environment profiles (`APP_ENV=local|staging|production`) with config validation
+- Security controls: auth token support, request-size checks, rate limiting, strict security headers, CORS allowlist
+- Runtime resilience: persisted initialization state, retrieval cache, controlled reindexing, retry/fallback generation behavior
+- CI baseline with unit tests + static security scan
+- Dockerized deployment with Gunicorn WSGI server
 
 ---
 
-## Core capabilities
+## Architecture
 
-1. **Medical RAG pipeline**
-   - Indexes medical text into FAISS.
-   - Retrieves top-k evidence chunks per query.
-   - Prompts the LLM with only retrieved context.
-
-2. **Baseline vs RAG comparison**
-   - Baseline answer (no retrieval context)
-   - RAG answer (retrieval-grounded)
-   - Side-by-side output to show measurable impact.
-
-3. **Live evaluation metrics**
-   - ROUGE-based overlap metrics
-   - Latency tracking
-   - Accuracy improvement signal from baseline vs RAG.
-
-4. **Explainability-oriented UX**
-   - Surfaces source snippets used for generation.
-   - Encourages evidence-backed answers and transparency.
+- `app.py` – Flask app factory, API routing, health endpoints
+- `src/services/med_service.py` – orchestration service (init, chat, metrics, caching, runtime state)
+- `src/security.py` – request guards (auth, content-type, size, rate limiting, headers, CORS)
+- `src/config.py` – strict config loading/validation and environment profiles
+- `src/retrieval/langchain_faiss_store.py` – vector index/retrieval
+- `src/generation/llm_generators.py` – model invocation with retry/fallback
+- `src/evaluation/metrics.py` – quality metrics
 
 ---
 
-## High-level architecture
+## API contract (v1)
 
-1. User sends question from web UI.
-2. Flask API calls retrieval layer.
-3. FAISS returns nearest medical evidence.
-4. Generator produces:
-   - grounded RAG answer
-   - baseline non-grounded answer
-5. Evaluator computes response metrics.
-6. UI renders answers, sources, and metrics.
-
-Primary modules:
-- `app.py` – Flask API and runtime orchestration
-- `src/retrieval/langchain_faiss_store.py` – vector index + retrieval
-- `src/generation/llm_generators.py` – LLM inference wrappers
-- `src/evaluation/metrics.py` – RAG quality metrics
-- `src/data_loader.py` – dataset and corpus loading/fallbacks
-
----
-
-## Tech stack
-
-- **Backend:** Python, Flask
-- **RAG orchestration:** LangChain
-- **Vector store:** FAISS
-- **Embeddings:** sentence-transformers
-- **LLM API:** Groq-compatible chat model integration
-- **Evaluation:** rouge-score + custom hallucination proxy metrics
-- **Frontend:** HTML/CSS/JavaScript
-
----
-
-## Quickstart
-
-### 1) Clone and enter repo
-```bash
-git clone https://github.com/Flamechargerr/MedRAG.git
-cd MedRAG
+### POST `/api/v1/init`
+Request:
+```json
+{ "corpus_size": 200, "force_reindex": false }
 ```
 
-### 2) Install dependencies
+Response:
+```json
+{ "status": "success", "message": "Loaded X docs in Ys." }
+```
+
+### POST `/api/v1/chat`
+Request:
+```json
+{ "query": "...", "reference": "optional" }
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "answer": "...",
+  "baseline_answer": "...",
+  "sources": [{"title": "...", "text": "..."}],
+  "metrics": {
+    "Latency": "0.12s",
+    "RAG_ROUGE_L": 0.45,
+    "Baseline_ROUGE_L": 0.30,
+    "Accuracy_Improvement": "15.0%"
+  }
+}
+```
+
+### Health checks
+- `GET /api/v1/health/live`
+- `GET /api/v1/health/ready`
+
+Legacy routes `/api/init` and `/api/chat` are retained for compatibility.
+
+---
+
+## Environment configuration
+
+Required in production:
+- `APP_ENV=production`
+- `APP_AUTH_TOKEN=<token>`
+- `GROQ_API_KEY=<key>` (or secret file equivalent)
+- `CORS_ORIGINS=https://your-ui-domain.com`
+
+Optional:
+- `APP_SECRET_FILE=/path/to/secrets.json`
+- `RATE_LIMIT_PER_MINUTE=60`
+- `MAX_REQUEST_BYTES=65536`
+- `MAX_QUERY_CHARS=2000`
+- `DEFAULT_CORPUS_SIZE=200`
+- `MAX_CORPUS_SIZE=2000`
+- `FAISS_DB_DIR=./faiss_db`
+- `RUNTIME_STATE_PATH=./runtime_state.json`
+- `LLM_MAX_RETRIES=2`
+
+If using token auth in the browser UI, set:
+```js
+localStorage.setItem('MEDRAG_API_TOKEN', 'your-token')
+```
+
+---
+
+## Local development
+
+### 1) Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3) Configure environment variables
-Set at least one supported key:
-- `GROQ_API_KEY` (preferred)
-- `OPENCALL_LLM_KEY`
-- `EMERGENT_LLM_KEY`
-
-Example:
+### 2) Run unit tests
 ```bash
-export GROQ_API_KEY="your_key_here"
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
-### 4) Run the web app
+### 3) Run app
 ```bash
 python app.py
 ```
@@ -117,48 +120,47 @@ Open `http://127.0.0.1:5000`.
 
 ---
 
-## Testing
+## Docker deployment
 
-Run lightweight unit tests:
+Build:
 ```bash
-python -m unittest discover -s tests -p "test_*.py"
+docker build -t medrag:latest .
 ```
 
-Run environment verification script:
+Run:
 ```bash
-python test_environment.py
+docker run --rm -p 5000:5000 \
+  -e APP_ENV=production \
+  -e APP_AUTH_TOKEN=change-me \
+  -e GROQ_API_KEY=your-key \
+  -e CORS_ORIGINS=http://localhost:5000 \
+  medrag:latest
 ```
 
 ---
 
-## Responsible AI notes
+## CI/CD baseline
 
-- Retrieval-grounded prompting is used to reduce unsupported claims.
-- Source snippets are returned to increase answer traceability.
-- Baseline comparison highlights the value of grounding.
-- This system should be treated as a decision-support prototype only.
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs:
+- Unit tests (`unittest`)
+- Bandit security scan
 
 ---
 
-## Resume / recruiter explanation guide
+## Operational runbook (short)
 
-Use this short narrative:
-
-> “I built a production-style medical RAG system with Flask, LangChain, FAISS, and LLM APIs.  
-> The system compares baseline LLM responses against retrieval-grounded responses, exposes evidence snippets for explainability, and tracks live quality metrics like ROUGE and latency.  
-> I designed it with responsible-AI principles for a sensitive healthcare context: grounding, transparency, and bias-awareness in evaluation.”
-
-Suggested talking points:
-- Why RAG in healthcare (factual grounding matters).
-- Why FAISS (fast local semantic retrieval).
-- How baseline vs RAG validated quality improvements.
-- How explainability is implemented (source snippets + metrics).
+- Verify liveness/ready endpoints before routing traffic
+- Rotate API/auth secrets regularly and use `APP_SECRET_FILE` for managed secret injection
+- Monitor error rate, request latency, and initialization times
+- Reindex intentionally using `force_reindex=true` during controlled updates
+- Keep explicit safety notice in all user-facing flows
 
 ---
 
 ## Limitations and next steps
 
-- Add stronger clinical validation datasets and human expert review.
-- Introduce automated CI for dependency, unit, and security checks.
-- Add structured citation scoring and calibrated confidence outputs.
-- Add role-based access controls and audit logging for real deployments.
+- Add persistent distributed rate limiting (Redis) for multi-instance deployments
+- Add real RBAC identity provider integration
+- Add tracing/metrics stack (OpenTelemetry + Prometheus/Grafana)
+- Add staged deployment and rollout/rollback automation
+- Add safety regression benchmark suite with clinical expert review

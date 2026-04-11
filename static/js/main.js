@@ -6,26 +6,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const initStatus = document.getElementById('init-status');
     const connectionDot = document.getElementById('connection-dot');
     const connectionText = document.getElementById('connection-text');
-    
-    // Output fields
+
     const ragOutput = document.getElementById('rag-output');
     const baseOutput = document.getElementById('base-output');
     const sourcesOutput = document.getElementById('sources-output');
-    
-    // Metric fields
+
     const latVal = document.getElementById('latency-val');
     const accVal = document.getElementById('acc-val');
     const ragVal = document.getElementById('rag-val');
     const baseVal = document.getElementById('base-val');
-    
-    let currentReference = "";
 
-    // Sync slider
+    let currentReference = "";
+    let isInitialized = false;
+
+    function buildHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem('MEDRAG_API_TOKEN');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    function setSystemStatus(online, text) {
+        connectionDot.className = online ? 'dot online' : 'dot offline';
+        connectionText.textContent = text;
+    }
+
+    function renderError(target, text) {
+        target.innerHTML = `<span class="placeholder-text" style="color:var(--danger)">${text}</span>`;
+    }
+
     corpusSize.addEventListener('input', (e) => {
         corpusVal.textContent = e.target.value;
     });
 
-    // Handle Examples
     document.querySelectorAll('#examples-list li').forEach(li => {
         li.addEventListener('click', () => {
             document.getElementById('query-input').value = li.getAttribute('data-q');
@@ -35,77 +50,82 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initialize System
     initBtn.addEventListener('click', async () => {
         initBtn.disabled = true;
         initBtn.textContent = 'Initializing...';
         initStatus.textContent = 'Indexing medical documents into FAISS...';
         initStatus.style.color = 'var(--text-muted)';
-        
+
         try {
-            const res = await fetch('/api/init', {
+            const res = await fetch('/api/v1/init', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ corpus_size: parseInt(corpusSize.value) })
+                headers: buildHeaders(),
+                body: JSON.stringify({ corpus_size: parseInt(corpusSize.value, 10) })
             });
             const data = await res.json();
-            
-            if(data.status === 'success') {
+
+            if (res.ok && data.status === 'success') {
+                isInitialized = true;
                 initStatus.textContent = data.message;
                 initStatus.style.color = 'var(--success)';
-                connectionDot.className = 'dot online';
-                connectionText.textContent = 'System Online & Indexed';
+                setSystemStatus(true, 'System Online & Indexed');
             } else {
-                initStatus.textContent = 'Error: ' + data.message;
+                isInitialized = false;
+                initStatus.textContent = 'Error: ' + (data.message || 'Initialization failed');
                 initStatus.style.color = 'var(--danger)';
+                setSystemStatus(false, 'Initialization failed');
             }
-        } catch(err) {
+        } catch (err) {
+            isInitialized = false;
             initStatus.textContent = 'Network error during initialization.';
             initStatus.style.color = 'var(--danger)';
+            setSystemStatus(false, 'Network error');
         } finally {
             initBtn.disabled = false;
             initBtn.textContent = 'Initialize Engine';
         }
     });
 
-    // Submit Query
     submitBtn.addEventListener('click', async () => {
         const query = document.getElementById('query-input').value.trim();
-        if(!query) return alert('Enter a patient clinical presentation or medical query first.');
-        
+        if (!query) {
+            return alert('Enter a patient clinical presentation or medical query first.');
+        }
+        if (!isInitialized) {
+            return alert('Please initialize the system before submitting a query.');
+        }
+
         submitBtn.disabled = true;
         submitBtn.textContent = 'Processing RAG Pipeline...';
-        
+
         ragOutput.innerHTML = '<span class="placeholder-text">Analyzing evidence & synthesizing response...</span>';
         baseOutput.innerHTML = '<span class="placeholder-text">Generating direct inference...</span>';
-        
+
         try {
-            const res = await fetch('/api/chat', {
+            const res = await fetch('/api/v1/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: buildHeaders(),
                 body: JSON.stringify({ query, reference: currentReference })
             });
             const data = await res.json();
-            
-            if(data.status === 'success') {
+
+            if (res.ok && data.status === 'success') {
                 ragOutput.textContent = data.answer;
                 baseOutput.textContent = data.baseline_answer;
-                
-                // Set metrics
-                if(data.metrics) {
+
+                if (data.metrics) {
                     latVal.textContent = data.metrics.Latency !== undefined ? data.metrics.Latency : '0.00s';
                     accVal.textContent = data.metrics.Accuracy_Improvement !== undefined ? data.metrics.Accuracy_Improvement : 'N/A';
                     ragVal.textContent = data.metrics.RAG_ROUGE_L !== undefined ? data.metrics.RAG_ROUGE_L : 'N/A';
                     baseVal.textContent = data.metrics.Baseline_ROUGE_L !== undefined ? data.metrics.Baseline_ROUGE_L : 'N/A';
                 }
-                
-                // Set sources
+
                 sourcesOutput.innerHTML = '';
-                if(data.sources && data.sources.length > 0) {
+                if (data.sources && data.sources.length > 0) {
                     data.sources.forEach((s, i) => {
                         sourcesOutput.innerHTML += `
                             <div class="source-item" style="animation-delay: ${i * 0.1}s">
-                                <div class="source-title">Source ${i+1}: ${s.title}</div>
+                                <div class="source-title">Source ${i + 1}: ${s.title}</div>
                                 <div class="source-text">${s.text}</div>
                             </div>
                         `;
@@ -114,18 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     sourcesOutput.innerHTML = '<span class="placeholder-text">No highly relevant sources found.</span>';
                 }
             } else {
-                alert('Backend Error: ' + data.message);
-                ragOutput.innerHTML = '<span class="placeholder-text" style="color:var(--danger)">Failed to process query.</span>';
-                baseOutput.innerHTML = '<span class="placeholder-text" style="color:var(--danger)">Failed to process query.</span>';
+                const errorMessage = data.message || 'Failed to process query.';
+                alert('Backend Error: ' + errorMessage);
+                renderError(ragOutput, errorMessage);
+                renderError(baseOutput, errorMessage);
             }
-        } catch(err) {
+        } catch (err) {
             alert('Network Error');
-            ragOutput.innerHTML = '<span class="placeholder-text" style="color:var(--danger)">Network error connecting to backend.</span>';
-            baseOutput.innerHTML = '<span class="placeholder-text" style="color:var(--danger)">Network error connecting to backend.</span>';
+            renderError(ragOutput, 'Network error connecting to backend.');
+            renderError(baseOutput, 'Network error connecting to backend.');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Run Diagnostic RAG';
-            currentReference = ""; // Reset reference after processing
+            currentReference = "";
         }
     });
 });
